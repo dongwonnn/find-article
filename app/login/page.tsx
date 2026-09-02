@@ -14,18 +14,23 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const res = await fetch('/api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
-    });
-    setLoading(false);
-    if (res.ok) {
-      router.push('/');
-      router.refresh();
-    } else {
-      const data = await res.json().catch(() => null);
-      setError(data?.error ?? '로그인에 실패했습니다.');
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      if (res.ok) {
+        router.push('/');
+        router.refresh();
+      } else {
+        const data = await res.json().catch(() => null);
+        setError(data?.error ?? '로그인에 실패했습니다.');
+      }
+    } catch {
+      setError('로그인 요청에 실패했습니다. 다시 시도해 주세요.');
+    } finally {
+      setLoading(false);
     }
   }
 

@@ -4,7 +4,9 @@ import { createToken } from '@/lib/auth';
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 export async function POST(request: NextRequest) {
-  const { username, password } = await request.json().catch(() => ({}) as Record<string, unknown>);
+  const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
+  const username = body?.username;
+  const password = body?.password;
   const expectedUser = process.env.AUTH_USER;
   const expectedPass = process.env.AUTH_PASS;
   const secret = process.env.AUTH_SECRET;
