@@ -40,10 +40,13 @@ export async function collectNaver(query: string): Promise<NewsArticle[]> {
   if (!clientId || !clientSecret) {
     throw new Error('NAVER_CLIENT_ID / NAVER_CLIENT_SECRET이 설정되지 않았습니다.');
   }
+  // 2026-07-31자로 개발자센터(openapi.naver.com)의 검색 API 신규 발급이 끝나고
+  // NAVER API HUB(네이버 클라우드 플랫폼)로 이관됐다. 주소와 인증 헤더가 바뀌었을 뿐
+  // 요청 파라미터와 응답 구조는 같다.
   const res = await fetch(
-    `https://openapi.naver.com/v1/search/news.json?query=${encodeURIComponent(query)}&display=20&sort=date`,
+    `https://naverapihub.apigw.ntruss.com/search/v1/news?query=${encodeURIComponent(query)}&display=20&sort=date`,
     {
-      headers: { 'X-Naver-Client-Id': clientId, 'X-Naver-Client-Secret': clientSecret },
+      headers: { 'X-NCP-APIGW-API-KEY-ID': clientId, 'X-NCP-APIGW-API-KEY': clientSecret },
       signal: AbortSignal.timeout(5000),
       cache: 'no-store',
     },

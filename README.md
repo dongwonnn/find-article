@@ -1,6 +1,6 @@
 # find-article — 뉴스 통합 검색
 
-검색어를 입력하면 네이버(오픈 API)·구글(뉴스 RSS)·다음(검색결과 파싱)에서
+검색어를 입력하면 네이버(NAVER API HUB)·구글(뉴스 RSS)·다음(검색결과 파싱)에서
 뉴스 기사를 수집해 중복을 합치고 최신순으로 보여주는 사내용 웹앱입니다.
 공유 계정 하나로 로그인해야 사용할 수 있습니다.
 
@@ -30,11 +30,15 @@
    - `AUTH_USER` / `AUTH_PASS`: 로그인 계정
    - `AUTH_SECRET`: 쿠키 서명용 긴 랜덤 문자열 (`openssl rand -hex 32`)
    - `NAVER_CLIENT_ID` / `NAVER_CLIENT_SECRET`:
-     [네이버 개발자센터](https://developers.naver.com/apps)에서 로그인 →
-     "Application 등록" → 사용 API에서 "검색" 체크 → 비로그인 오픈 API
-     서비스 환경 등록(웹 서비스 URL은 배포 주소, 로컬 개발 중이면
-     `http://localhost:3000`처럼 아무 값이나 입력 가능) → 등록 완료 후
-     발급되는 Client ID / Client Secret을 입력 (무료, 일 25,000회 한도)
+     [네이버 클라우드 플랫폼 콘솔](https://console.ncloud.com)에서
+     All Services > Application Services > **NAVER API HUB** > 서비스 이용 신청 →
+     Application 등록 시 **검색(뉴스)** API 선택 → 발급된 Client ID / Secret 입력.
+     현재 무료지만 향후 유료 요금제 도입 가능성이 공지돼 있다.
+
+     주의: 검색 API는 2026-07-31자로 [네이버 개발자센터](https://developers.naver.com)에서
+     **신규 발급이 종료**되고 NAVER API HUB로 이관됐다. 개발자센터에서 그 전에
+     발급받은 키는 2027-06-30까지만 쓸 수 있고, 호출 주소와 인증 헤더가 달라서
+     이 코드(`lib/collectors/naver.ts`)와 호환되지 않는다.
 3. 개발 서버: `npm run dev`
 4. 테스트: `npm test`
 
