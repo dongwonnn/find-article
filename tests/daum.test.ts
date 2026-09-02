@@ -41,4 +41,18 @@ describe('parseDaumHtml', () => {
     const withImage = parseDaumHtml(fixture, NOW).filter((a) => a.imageUrl);
     expect(withImage.length).toBeGreaterThan(0);
   });
+
+  // 시각·언론사 셀렉터가 깨지면 각각 now와 '다음 뉴스'로 조용히 떨어져
+  // 위의 필수 필드 검사를 그대로 통과한다. 그 폴백값이 실제로 안 나오는지 직접 본다.
+  it('시각 셀렉터가 살아있다 (now로 떨어진 기사가 없다)', () => {
+    const stampedNow = parseDaumHtml(fixture, NOW).filter(
+      (a) => a.publishedAt === NOW.toISOString(),
+    );
+    expect(stampedNow).toHaveLength(0);
+  });
+
+  it('언론사 셀렉터가 살아있다 (폴백값이 쓰인 기사가 없다)', () => {
+    const fallback = parseDaumHtml(fixture, NOW).filter((a) => a.press === '다음 뉴스');
+    expect(fallback).toHaveLength(0);
+  });
 });

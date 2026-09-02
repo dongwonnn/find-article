@@ -43,7 +43,7 @@ export function parseDaumHtml(html: string, now: Date = new Date()): NewsArticle
   const $ = cheerio.load(html);
   const articles: NewsArticle[] = [];
 
-  $('li[data-docid]').each((_, el) => {
+  $('ul.c-list-basic > li[data-docid]').each((_, el) => {
     const item = $(el);
     const titleLink = item.find('.item-title a').first();
     const title = collapse(titleLink.text());
