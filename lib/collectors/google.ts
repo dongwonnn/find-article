@@ -57,7 +57,14 @@ export async function collectGoogle(query: string): Promise<NewsArticle[]> {
   const res = await fetch(
     `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=ko&gl=KR&ceid=KR%3Ako`,
     {
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; find-article/1.0)' },
+      headers: {
+        // 자체 UA(find-article/1.0)로 부르면 클라우드 IP에서 503이 잦다.
+        // 네이버·다음 수집기와 같은 브라우저 UA로 맞춘다.
+        'User-Agent':
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0 Safari/537.36',
+        'Accept-Language': 'ko-KR,ko;q=0.9',
+        Accept: 'application/rss+xml, application/xml;q=0.9, */*;q=0.8',
+      },
       signal: AbortSignal.timeout(COLLECT_TIMEOUT_MS),
       cache: 'no-store',
     },
