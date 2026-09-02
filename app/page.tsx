@@ -19,6 +19,9 @@ export default function HomePage() {
     try {
       const res = await fetch(`/api/search?q=${encodeURIComponent(nextQuery)}`);
       if (res.status === 401) {
+        // 세션이 끊긴 상황이라 클라이언트 라우팅 대신 전체 새로고침으로 넘긴다.
+        // router.push는 만료된 상태를 그대로 안고 가서 다시 401을 맞는다.
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination
         window.location.href = '/login';
         return;
       }

@@ -51,6 +51,9 @@ export function ArticleCard({ article }: { article: NewsArticle }) {
             {article.press.slice(0, 1)}
           </span>
           {showImage && (
+            // 대표 이미지는 언론사 CDN 어디서든 올 수 있어 next/image의 도메인 등록을
+            // 유지할 수 없다. 핫링크 차단을 피하려 referrer도 떼야 한다.
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={imageUrl}
               alt=""
