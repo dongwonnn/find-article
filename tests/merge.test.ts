@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mergeArticles, normalizeTitle, normalizeUrl } from '@/lib/merge';
+import { articleId, mergeArticles, normalizeTitle, normalizeUrl } from '@/lib/merge';
 import type { NewsArticle } from '@/lib/types';
 
 function article(over: Partial<NewsArticle>): NewsArticle {
@@ -67,5 +67,57 @@ describe('mergeArticles', () => {
     const original = article({ portals: ['naver'] });
     mergeArticles([[original], [article({ portals: ['google'] })]]);
     expect(original.portals).toEqual(['naver']);
+  });
+
+  it('제목으로 합쳐진 기사의 URL도 색인되어, 이후 그 URL로 오는 기사가 같은 항목으로 합쳐진다', () => {
+    // A: url1/titleX, B: url2/titleX (title merges into A), C: url2/titleY
+    // (should merge into A via url2 — only possible if B's merge registered
+    // url2 in byUrl, since url2 was never indexed before that).
+    const a = article({ url: 'https://a.com/1', title: '가나다 뉴스', portals: ['naver'] });
+    const b = article({ url: 'https://b.com/2', title: '가나다 뉴스', portals: ['daum'] });
+    const c = article({ url: 'https://b.com/2', title: '마바사 속보', portals: ['google'] });
+    const merged = mergeArticles([[a], [b], [c]]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].portals).toEqual(['naver', 'daum', 'google']);
+  });
+
+  it('URL로 합쳐진 기사의 제목도 색인되어, 이후 그 제목으로 오는 기사가 같은 항목으로 합쳐진다', () => {
+    // A: url1/titleX, B: url1/titleY (url merges into A), C: url3/titleY
+    // (should merge into A via titleY — only possible if B's merge
+    // registered titleY in byTitle, since titleY was never indexed before that).
+    const a = article({ url: 'https://a.com/1', title: '가나다 뉴스', portals: ['naver'] });
+    const b = article({ url: 'https://a.com/1', title: '마바사 속보', portals: ['daum'] });
+    const c = article({ url: 'https://c.com/3', title: '마바사 속보', portals: ['google'] });
+    const merged = mergeArticles([[a], [b], [c]]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].portals).toEqual(['naver', 'daum', 'google']);
+  });
+
+  it('정규화된 제목이 둘 다 빈 문자열이어도 URL이 다르면 별개 기사로 남는다', () => {
+    const a = article({ url: 'https://a.com/1', title: '!!!' });
+    const b = article({ url: 'https://b.com/2', title: '???' });
+    expect(normalizeTitle(a.title)).toBe('');
+    expect(normalizeTitle(b.title)).toBe('');
+    const merged = mergeArticles([[a], [b]]);
+    expect(merged).toHaveLength(2);
+  });
+});
+
+describe('articleId', () => {
+  it('같은 입력이면 같은 값을 반환한다', () => {
+    expect(articleId('https://a.com/1')).toBe(articleId('https://a.com/1'));
+  });
+
+  it('normalizeUrl이 제거하는 요소(www, 쿼리스트링, 트레일링 슬래시)에 영향받지 않는다', () => {
+    expect(articleId('https://www.a.com/1/?ref=x')).toBe(articleId('http://a.com/1'));
+  });
+
+  it('URL이 다르면 다른 값을 반환한다', () => {
+    expect(articleId('https://a.com/1')).not.toBe(articleId('https://a.com/2'));
+  });
+
+  it('16진수 문자열(1~8자)을 반환한다', () => {
+    expect(articleId('https://a.com/1')).toMatch(/^[0-9a-f]{1,8}$/);
+    expect(articleId('https://very-long-domain-name.example.com/some/long/path/1')).toMatch(/^[0-9a-f]{1,8}$/);
   });
 });

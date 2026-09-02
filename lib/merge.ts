@@ -33,7 +33,11 @@ export function mergeArticles(lists: NewsArticle[][]): NewsArticle[] {
     for (const incoming of list) {
       const urlKey = normalizeUrl(incoming.url);
       const titleKey = normalizeTitle(incoming.title);
-      const existing = byUrl.get(urlKey) ?? byTitle.get(titleKey);
+      // An empty normalized key (e.g. a title that is only punctuation, or
+      // a URL that normalizes to '') must never act as a match key: two
+      // unrelated articles that both happen to normalize to '' should not
+      // be treated as the same article.
+      const existing = (urlKey ? byUrl.get(urlKey) : undefined) ?? (titleKey ? byTitle.get(titleKey) : undefined);
 
       if (existing) {
         for (const portal of incoming.portals) {
@@ -45,12 +49,12 @@ export function mergeArticles(lists: NewsArticle[][]): NewsArticle[] {
         // Keep the title-key index consistent so a later article matching
         // the incoming article's own title (which may differ from the
         // existing entry's title) still resolves to the same merged entry.
-        byUrl.set(urlKey, existing);
-        byTitle.set(titleKey, existing);
+        if (urlKey) byUrl.set(urlKey, existing);
+        if (titleKey) byTitle.set(titleKey, existing);
       } else {
         const copy: NewsArticle = { ...incoming, portals: [...incoming.portals] };
-        byUrl.set(urlKey, copy);
-        byTitle.set(titleKey, copy);
+        if (urlKey) byUrl.set(urlKey, copy);
+        if (titleKey) byTitle.set(titleKey, copy);
         result.push(copy);
       }
     }
