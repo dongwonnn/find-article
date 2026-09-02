@@ -1,0 +1,33 @@
+import { describe, expect, it } from 'vitest';
+import { extractOgImage, isFetchableUrl } from '@/lib/og';
+
+describe('extractOgImage', () => {
+  it('og:image를 추출한다', () => {
+    const html = '<html><head><meta property="og:image" content="https://img.example.com/a.jpg"/></head></html>';
+    expect(extractOgImage(html)).toBe('https://img.example.com/a.jpg');
+  });
+
+  it('og:image가 없으면 twitter:image로 폴백한다', () => {
+    const html = '<html><head><meta name="twitter:image" content="https://img.example.com/t.jpg"/></head></html>';
+    expect(extractOgImage(html)).toBe('https://img.example.com/t.jpg');
+  });
+
+  it('둘 다 없으면 null을 돌려준다', () => {
+    expect(extractOgImage('<html><head></head></html>')).toBeNull();
+  });
+});
+
+describe('isFetchableUrl', () => {
+  it('일반 http(s) URL은 허용한다', () => {
+    expect(isFetchableUrl('https://www.yna.co.kr/view/1')).toBe(true);
+  });
+
+  it('내부망·localhost·비http는 차단한다', () => {
+    expect(isFetchableUrl('http://localhost:3000/admin')).toBe(false);
+    expect(isFetchableUrl('http://127.0.0.1/x')).toBe(false);
+    expect(isFetchableUrl('http://192.168.0.1/x')).toBe(false);
+    expect(isFetchableUrl('http://10.0.0.5/x')).toBe(false);
+    expect(isFetchableUrl('ftp://a.com/x')).toBe(false);
+    expect(isFetchableUrl('주소아님')).toBe(false);
+  });
+});
