@@ -27,7 +27,7 @@
 
 ```
 [검색창] → GET /api/search?q=<검색어>
-              ├─ 네이버 수집기 (공식 오픈 API, sort=date, display=20)
+              ├─ 네이버 수집기 (검색결과 파싱, sort=1=최신순, 10건×2페이지)
               ├─ 구글 수집기  (news.google.com RSS, hl=ko)
               └─ 다음 수집기  (search.daum.net?w=news&sort=recency HTML)
               ↓ Promise.allSettled — 한 포털이 실패해도 나머지는 반환
@@ -40,7 +40,7 @@
 ### 이미지 전략
 
 - 다음: 검색결과에 썸네일 포함 → 즉시 표시.
-- 네이버/구글: 이미지 미제공 → 목록을 먼저 응답하고, 각 카드가
+- 구글: 이미지 미제공 → 목록을 먼저 응답하고, 각 카드가
   `GET /api/og?url=<기사URL>`로 기사 페이지의 `og:image`를 지연 로드.
   서버 메모리 캐시 24시간 TTL. 실패 시 언론사 이니셜 플레이스홀더.
 
@@ -64,12 +64,14 @@ interface NewsArticle {
 - 중복 판정: URL 정규화(프로토콜/쿼리스트링/트레일링 슬래시 제거) 일치, 또는
   제목 정규화(공백·특수문자 제거) 일치. 합칠 때 이미지·요약은 있는 쪽을 채택,
   `publishedAt`은 더 이른 시각을 채택.
-- 네이버 API는 언론사명을 주지 않음 → 원문(originallink) 도메인 → 언론사명
-  매핑 테이블(주요 언론사 약 50개) + 미등록 도메인은 도메인 문자열 그대로 표시.
+- 구글 RSS는 언론사명을 도메인/영문으로만 주는 경우가 있어 도메인 → 언론사명
+  매핑 테이블(주요 언론사 약 50개)로 보정하고, 미등록 도메인은 도메인 문자열 그대로 표시.
+  네이버·다음은 검색결과에 언론사명이 그대로 들어 있어 그대로 쓴다.
 
 ## 인증
 
-- 환경변수: `AUTH_USER`, `AUTH_PASS`, `AUTH_SECRET`, `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`.
+- 환경변수: `AUTH_USER`, `AUTH_PASS`, `AUTH_SECRET`. (네이버 공식 API가 유료 클라우드
+  계정으로 이관돼 검색결과 파싱으로 바꾼 뒤로 포털 수집기용 키는 없다.)
 - `/login` 폼 → 일치 시 HMAC-SHA256 서명 값을 담은 httpOnly·secure 쿠키 발급, 7일 유효.
 - `middleware.ts`가 쿠키 검증. 미인증 페이지 요청 → `/login` 리다이렉트,
   미인증 API 요청 → 401.
@@ -91,7 +93,7 @@ interface NewsArticle {
 
 ## 테스트 (Vitest)
 
-- 수집기 파싱 로직: 저장된 fixture(네이버 JSON, 구글 RSS XML, 다음 HTML)를 입력으로 단위 테스트.
+- 수집기 파싱 로직: 저장된 fixture(네이버 검색결과 JSON, 구글 RSS XML, 다음 HTML)를 입력으로 단위 테스트.
 - 중복 합침·최신순 정렬 로직 단위 테스트.
 - og:image 추출(HTML → meta 태그) 단위 테스트.
 - 인증 쿠키 서명/검증 단위 테스트.

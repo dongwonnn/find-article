@@ -16,7 +16,11 @@
 - 포털별 수집 최대 20건. 수집 타임아웃 5초, og:image fetch 타임아웃 3초.
 - 캐시: 검색 결과 2분 TTL, og:image 24시간 TTL (실패도 캐시).
 - 인증 쿠키 `auth_token`: httpOnly, sameSite=lax, 7일 유효.
-- 환경변수: `AUTH_USER`, `AUTH_PASS`, `AUTH_SECRET`, `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`.
+- 환경변수: `AUTH_USER`, `AUTH_PASS`, `AUTH_SECRET`, ~~`NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`~~.
+  > **정정(Task 13):** 네이버 공식 검색 API가 유료 클라우드 계정(NAVER API HUB)으로
+  > 이관돼 다음처럼 검색결과 파싱으로 바꿨다. 네이버 키 두 개는 삭제됐고 환경변수는
+  > 세 개뿐이다. 아래 Task 6·Task 7 본문에 남은 키 설정과 API 호출 코드는 당시 계획을
+  > 그대로 둔 기록이며, 현재 코드는 `lib/collectors/naver.ts`와 README를 따른다.
 - `lib/auth.ts`는 Edge 런타임(middleware)에서 돌므로 Node `crypto`/`Buffer` 금지 — Web Crypto(`crypto.subtle`)와 `btoa`만 사용.
 - import 별칭 `@/*` = 프로젝트 루트.
 - 외부 이미지는 `next/image` 대신 일반 `<img referrerPolicy="no-referrer">` 사용 (언론사 핫링크 차단 우회, 도메인 무제한).

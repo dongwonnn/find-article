@@ -1,30 +1,11 @@
 import * as cheerio from 'cheerio';
 import { articleId } from '../merge';
 import type { NewsArticle } from '../types';
+import { parseKoreanTime } from './korean-time';
 
+/** 다음이 쓰는 시각 표기는 네이버와 같아서 공통 파서에 위임한다. */
 export function parseDaumTime(text: string, now: Date): string {
-  const t = text.trim();
-  let m = t.match(/^(\d+)분\s*전$/);
-  if (m) return new Date(now.getTime() - Number(m[1]) * 60_000).toISOString();
-  m = t.match(/^(\d+)시간\s*전$/);
-  if (m) return new Date(now.getTime() - Number(m[1]) * 3_600_000).toISOString();
-  m = t.match(/^(\d+)일\s*전$/);
-  if (m) return new Date(now.getTime() - Number(m[1]) * 86_400_000).toISOString();
-  m = t.match(/^(\d+)주\s*전$/);
-  if (m) return new Date(now.getTime() - Number(m[1]) * 7 * 86_400_000).toISOString();
-  m = t.match(/^(\d+)개월\s*전$/);
-  if (m) return new Date(now.getTime() - Number(m[1]) * 30 * 86_400_000).toISOString();
-  if (t === '어제') return new Date(now.getTime() - 86_400_000).toISOString();
-  if (t === '방금전' || t === '방금 전') return now.toISOString();
-  // 다음이 표시하는 절대 날짜는 KST 기준이다.
-  m = t.match(/^(\d{4})\.\s?(\d{1,2})\.\s?(\d{1,2})\.?$/);
-  if (m) {
-    const [, y, mo, d] = m;
-    return new Date(`${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}T00:00:00+09:00`).toISOString();
-  }
-  // 모르는 형식은 now가 아니라 epoch로 떨어뜨린다. now로 두면 시각을 못 읽은
-  // 기사가 최신순 목록 맨 앞을 차지해 정렬이 조용히 망가진다.
-  return new Date(0).toISOString();
+  return parseKoreanTime(text, now);
 }
 
 function absoluteImageUrl(src: string | undefined): string | undefined {
