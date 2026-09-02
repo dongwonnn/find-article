@@ -44,3 +44,6 @@ next-env.d.ts
 # internal scratch (not part of the app)
 .superpowers/
 .naro
+
+# JetBrains IDE
+.idea/
