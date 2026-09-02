@@ -2,6 +2,7 @@ import * as cheerio from 'cheerio';
 import { articleId } from '../merge';
 import type { NewsArticle } from '../types';
 import { parseKoreanTime } from './korean-time';
+import { COLLECT_TIMEOUT_MS } from './config';
 
 /** 다음이 쓰는 시각 표기는 네이버와 같아서 공통 파서에 위임한다. */
 export function parseDaumTime(text: string, now: Date): string {
@@ -69,7 +70,7 @@ export async function collectDaum(query: string): Promise<NewsArticle[]> {
           'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0 Safari/537.36',
         'Accept-Language': 'ko-KR,ko;q=0.9',
       },
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(COLLECT_TIMEOUT_MS),
       cache: 'no-store',
     },
   );

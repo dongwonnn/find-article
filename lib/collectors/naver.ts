@@ -2,6 +2,7 @@ import * as cheerio from 'cheerio';
 import { articleId } from '../merge';
 import type { NewsArticle } from '../types';
 import { EPOCH_ISO, parseKoreanTime } from './korean-time';
+import { COLLECT_TIMEOUT_MS } from './config';
 
 // 네이버 뉴스 검색은 결과를 클라이언트에서 그린다. 검색 페이지 HTML을 받아봐야
 // 기사가 하나도 없고, 그 페이지가 호출하는 아래 내부 엔드포인트가 기사 마크업
@@ -140,7 +141,7 @@ async function fetchPage(encodedQuery: string, start: number): Promise<NewsArtic
       // 네이버가 언제든 출처를 따질 수 있어 실제 호출과 똑같이 맞춰 둔다.
       Referer: `https://search.naver.com/search.naver?where=news&query=${encodedQuery}&sort=1`,
     },
-    signal: AbortSignal.timeout(5000),
+    signal: AbortSignal.timeout(COLLECT_TIMEOUT_MS),
     cache: 'no-store',
   });
   if (!res.ok) throw new Error(`네이버 검색 오류: ${res.status}`);

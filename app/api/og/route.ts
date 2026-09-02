@@ -31,7 +31,9 @@ const MAX_REDIRECTS = 3;
 // redirect: 'follow'로 두면 검증을 통과한 외부 URL이 내부 주소로 리다이렉트시켜
 // 서버가 대신 그 주소를 긁어오게 만들 수 있다.
 async function fetchOgImage(startUrl: string): Promise<string | null> {
-  const deadline = AbortSignal.timeout(3000);
+  // 수집기와 같은 이유로 로컬 기준 3초는 엣지에서 너무 빠듯하다.
+  // 이미지는 카드가 개별적으로 지연 로드하므로 길어져도 목록 표시를 막지 않는다.
+  const deadline = AbortSignal.timeout(8_000);
   let target = startUrl;
 
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {

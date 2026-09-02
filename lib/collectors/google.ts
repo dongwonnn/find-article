@@ -3,6 +3,7 @@ import { articleId } from '../merge';
 import { pressFromUrl } from '../press-map';
 import { stripHtml } from '../text';
 import type { NewsArticle } from '../types';
+import { COLLECT_TIMEOUT_MS } from './config';
 
 // 구글 RSS의 <source>는 언론사명일 때도 있고 도메인일 때도 있다
 // (예: '연합뉴스' vs 'mk.co.kr'). 도메인이면 매핑표를 태워 한글명으로 바꾼다.
@@ -57,7 +58,7 @@ export async function collectGoogle(query: string): Promise<NewsArticle[]> {
     `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=ko&gl=KR&ceid=KR%3Ako`,
     {
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; find-article/1.0)' },
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(COLLECT_TIMEOUT_MS),
       cache: 'no-store',
     },
   );
