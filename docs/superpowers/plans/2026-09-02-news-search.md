@@ -232,14 +232,16 @@ git commit -m "feat: NewsArticle 타입과 TTL 메모리 캐시 추가"
 ### Task 3: 인증 (토큰 유틸 + 로그인 API + middleware + 로그인 페이지)
 
 **Files:**
-- Create: `lib/auth.ts`, `app/api/login/route.ts`, `middleware.ts`, `app/login/page.tsx`
+- Create: `lib/auth.ts`, `app/api/login/route.ts`, `proxy.ts`, `app/login/page.tsx`
 - Test: `tests/auth.test.ts`
 
 **Interfaces:**
 - Produces:
   - `createToken(secret: string, ttlMs: number): Promise<string>` — `"<만료epoch>.<base64url서명>"` 형식
   - `verifyToken(secret: string, token: string | undefined): Promise<boolean>`
-  - 쿠키 이름 `auth_token`. middleware가 `/login`, `/api/login` 외 전부 보호.
+  - 쿠키 이름 `auth_token`. proxy가 `/login`, `/api/login` 외 전부 보호.
+
+**확정 사항:** 설치된 Next.js는 **16.3.4**. Next 16에서 `middleware.ts`는 폐기되고 **`proxy.ts`**(루트, `export function proxy`)가 정식 이름이다. 아래 Step 6은 이 이름으로 작성한다.
 - Consumes: 없음 (독립).
 
 - [ ] **Step 1: 실패하는 테스트 작성** — `tests/auth.test.ts`
@@ -376,7 +378,7 @@ export async function POST(request: NextRequest) {
 }
 ```
 
-- [ ] **Step 6: middleware.ts 작성 (프로젝트 루트)**
+- [ ] **Step 6: proxy.ts 작성 (프로젝트 루트)**
 
 ```ts
 import { NextRequest, NextResponse } from 'next/server';
@@ -384,7 +386,7 @@ import { verifyToken } from '@/lib/auth';
 
 const PUBLIC_PATHS = ['/login', '/api/login'];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) return NextResponse.next();
 
@@ -404,7 +406,7 @@ export const config = {
 };
 ```
 
-참고: 설치된 Next.js가 16 이상이라 `middleware.ts` 지원 중단/경고가 뜨면, 공식 문서의 안내대로 파일명만 `proxy.ts`(export 명 포함)로 바꾸고 내용은 동일하게 유지한다. `npm run dev` 기동 로그로 확인.
+`npm run dev` 기동 로그에 `proxy.ts` 관련 경고가 없는지 확인한다. 만약 설치된 Next가 이 이름을 인식하지 못하면 `middleware.ts` + `export function middleware`로 되돌린다.
 
 - [ ] **Step 7: app/login/page.tsx 작성**
 
