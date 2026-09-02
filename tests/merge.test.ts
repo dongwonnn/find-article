@@ -15,9 +15,19 @@ function article(over: Partial<NewsArticle>): NewsArticle {
 }
 
 describe('normalizeUrl', () => {
-  it('www·쿼리스트링·트레일링 슬래시를 제거한다', () => {
+  it('www·추적 파라미터·트레일링 슬래시를 제거한다', () => {
     expect(normalizeUrl('https://www.a.com/news/1/?ref=x&utm=y')).toBe('a.com/news/1');
     expect(normalizeUrl('http://a.com/news/1')).toBe('a.com/news/1');
+  });
+
+  it('기사 번호가 담긴 쿼리는 남긴다', () => {
+    expect(normalizeUrl('https://interfootball.co.kr/news/articleView.html?idxno=711111')).not.toBe(
+      normalizeUrl('https://interfootball.co.kr/news/articleView.html?idxno=722222'),
+    );
+  });
+
+  it('쿼리 순서가 달라도 같은 키가 된다', () => {
+    expect(normalizeUrl('https://a.com/v?b=2&a=1')).toBe(normalizeUrl('https://a.com/v?a=1&b=2'));
   });
 });
 

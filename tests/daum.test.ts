@@ -16,8 +16,8 @@ describe('parseDaumTime', () => {
     expect(parseDaumTime('2026.9.1.', NOW)).toBe('2026-08-31T15:00:00.000Z');
   });
 
-  it('해석 불가 문자열은 now를 돌려준다', () => {
-    expect(parseDaumTime('???', NOW)).toBe(NOW.toISOString());
+  it('해석 불가 문자열은 epoch로 떨어뜨려 최신순 맨 뒤로 보낸다', () => {
+    expect(parseDaumTime('???', NOW)).toBe(new Date(0).toISOString());
   });
 });
 
@@ -44,9 +44,9 @@ describe('parseDaumHtml', () => {
 
   // 시각·언론사 셀렉터가 깨지면 각각 now와 '다음 뉴스'로 조용히 떨어져
   // 위의 필수 필드 검사를 그대로 통과한다. 그 폴백값이 실제로 안 나오는지 직접 본다.
-  it('시각 셀렉터가 살아있다 (now로 떨어진 기사가 없다)', () => {
+  it('시각 셀렉터가 살아있다 (epoch로 떨어진 기사가 없다)', () => {
     const stampedNow = parseDaumHtml(fixture, NOW).filter(
-      (a) => a.publishedAt === NOW.toISOString(),
+      (a) => a.publishedAt === new Date(0).toISOString(),
     );
     expect(stampedNow).toHaveLength(0);
   });

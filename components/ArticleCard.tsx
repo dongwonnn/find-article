@@ -40,7 +40,8 @@ export function ArticleCard({ article }: { article: NewsArticle }) {
         href={article.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="group flex gap-3 p-3 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none sm:gap-4 sm:p-4"
+        // ring-inset가 없으면 li의 overflow-hidden에 포커스 링이 잘려 보이지 않는다.
+        className="group flex gap-3 p-3 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset focus-visible:outline-none sm:gap-4 sm:p-4"
       >
         {/* 이미지 자리는 처음부터 잡아 두고, 늦게 도착한 썸네일은 부드럽게 겹쳐 올린다 */}
         <div className="relative h-[68px] w-[92px] shrink-0 overflow-hidden rounded-lg bg-gray-100 sm:h-[76px] sm:w-28">

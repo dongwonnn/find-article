@@ -1,18 +1,31 @@
 import type { NewsArticle } from './types';
 
+// 유입 경로 추적용 파라미터. 이것만 떼고 나머지 쿼리는 남긴다.
+// 국내 중소 언론사 CMS는 기사 번호를 쿼리에 담는 경우가 많아
+// (예: articleView.html?idxno=711111) 쿼리를 통째로 버리면 서로 다른 기사가
+// 같은 키가 되어 조용히 하나로 합쳐진다.
+const TRACKING_PARAMS = /^(utm(_.*)?|ref|referrer|oc|fbclid|gclid|igshid|from|sid)$/i;
+
 export function normalizeUrl(url: string): string {
   try {
     const u = new URL(url);
     const host = u.hostname.replace(/^www\./, '');
     const path = u.pathname.replace(/\/$/, '');
-    return `${host}${path}`.toLowerCase();
+    const params = [...u.searchParams.entries()]
+      .filter(([key]) => !TRACKING_PARAMS.test(key))
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, value]) => `${key}=${value}`)
+      .join('&');
+    return `${host}${path}${params ? `?${params}` : ''}`.toLowerCase();
   } catch {
     return url.trim().toLowerCase();
   }
 }
 
+// \p{S}(기호)는 남긴다. ▲▼↑↓ 를 떼면 "코스피 ▲2.3%"와 "코스피 ▼2.3%"가
+// 같은 제목이 되어 정반대 기사끼리 합쳐진다.
 export function normalizeTitle(title: string): string {
-  return title.replace(/[\s\p{P}\p{S}]/gu, '').toLowerCase();
+  return title.replace(/[\s\p{P}]/gu, '').toLowerCase();
 }
 
 export function articleId(url: string): string {

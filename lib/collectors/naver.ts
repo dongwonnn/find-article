@@ -11,6 +11,11 @@ interface NaverItem {
   pubDate: string;
 }
 
+function toIsoOrEpoch(raw: string): string {
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? new Date(0).toISOString() : parsed.toISOString();
+}
+
 export function parseNaverResponse(json: unknown): NewsArticle[] {
   const items = (json as { items?: NaverItem[] })?.items ?? [];
   return items.map((item) => {
@@ -22,7 +27,9 @@ export function parseNaverResponse(json: unknown): NewsArticle[] {
       url,
       press: pressFromUrl(url),
       portals: ['naver' as const],
-      publishedAt: new Date(item.pubDate).toISOString(),
+      // pubDate가 깨지면 toISOString이 던져서 네이버 결과 20건이 통째로 날아간다.
+      // 해당 기사만 epoch로 떨어뜨려 목록 맨 뒤로 보낸다.
+      publishedAt: toIsoOrEpoch(item.pubDate),
     };
   });
 }

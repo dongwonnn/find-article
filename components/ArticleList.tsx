@@ -30,7 +30,10 @@ export function ArticleList({
         </p>
       )}
       {articles.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-gray-300 px-6 py-14 text-center">
+        <div
+          role="status"
+          className="rounded-xl border border-dashed border-gray-300 px-6 py-14 text-center"
+        >
           <p className="text-sm font-medium text-gray-700">검색 결과가 없어요.</p>
           <p className="mt-1 text-sm text-gray-500">다른 검색어로 다시 찾아보세요.</p>
         </div>
