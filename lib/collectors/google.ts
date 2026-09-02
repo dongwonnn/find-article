@@ -36,7 +36,7 @@ export function parseGoogleRss(xml: string): NewsArticle[] {
         url,
         press: press || '구글 뉴스',
         portals: ['google' as const],
-        publishedAt: new Date(String(item.pubDate ?? 0)).toISOString(),
+        publishedAt: new Date(item.pubDate ? String(item.pubDate) : 0).toISOString(),
       };
     })
     .filter((a) => a.url && a.title);

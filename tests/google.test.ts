@@ -24,4 +24,11 @@ describe('parseGoogleRss', () => {
   it('item이 없으면 빈 배열을 돌려준다', () => {
     expect(parseGoogleRss('<rss><channel></channel></rss>')).toEqual([]);
   });
+
+  it('pubDate가 없으면 epoch로 떨어져 최신순 정렬에서 뒤로 밀린다', () => {
+    const noDate = fixture.replace(/<pubDate>[^<]*<\/pubDate>/g, '');
+    const articles = parseGoogleRss(noDate);
+    expect(articles).toHaveLength(2);
+    expect(articles[0].publishedAt).toBe('1970-01-01T00:00:00.000Z');
+  });
 });
