@@ -53,7 +53,23 @@ export function parseGoogleRss(xml: string): NewsArticle[] {
     .filter((a) => a.url && a.title);
 }
 
+// 구글은 클라우드 IP에서 오는 요청에 503을 자주 돌려준다. 매번은 아니라
+// 한 번만 다시 시도한다. 그래도 안 되면 실패로 올려 배너를 띄운다.
 export async function collectGoogle(query: string): Promise<NewsArticle[]> {
+  try {
+    return await fetchGoogle(query);
+  } catch (error) {
+    if (!isRetryable(error)) throw error;
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    return fetchGoogle(query);
+  }
+}
+
+function isRetryable(error: unknown): boolean {
+  return error instanceof Error && /오류: 5\d\d/.test(error.message);
+}
+
+async function fetchGoogle(query: string): Promise<NewsArticle[]> {
   const res = await fetch(
     `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=ko&gl=KR&ceid=KR%3Ako`,
     {
