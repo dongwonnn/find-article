@@ -1,7 +1,17 @@
 import { XMLParser } from 'fast-xml-parser';
 import { articleId } from '../merge';
+import { pressFromUrl } from '../press-map';
 import { stripHtml } from '../text';
 import type { NewsArticle } from '../types';
+
+// 구글 RSS의 <source>는 언론사명일 때도 있고 도메인일 때도 있다
+// (예: '연합뉴스' vs 'mk.co.kr'). 도메인이면 매핑표를 태워 한글명으로 바꾼다.
+function pressName(source: string): string {
+  const value = source.trim();
+  if (!value) return '구글 뉴스';
+  const looksLikeDomain = /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(value);
+  return looksLikeDomain ? pressFromUrl(`https://${value}`) : value;
+}
 
 interface GoogleRssItem {
   title?: unknown;
@@ -34,7 +44,7 @@ export function parseGoogleRss(xml: string): NewsArticle[] {
         id: articleId(url),
         title: stripHtml(title),
         url,
-        press: press || '구글 뉴스',
+        press: pressName(press),
         portals: ['google' as const],
         publishedAt: new Date(item.pubDate ? String(item.pubDate) : 0).toISOString(),
       };

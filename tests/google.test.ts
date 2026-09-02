@@ -32,3 +32,17 @@ describe('parseGoogleRss', () => {
     expect(articles[0].publishedAt).toBe('1970-01-01T00:00:00.000Z');
   });
 });
+
+describe('언론사명 정규화', () => {
+  it('source가 도메인이면 한글 언론사명으로 바꾼다', () => {
+    const xml = fixture.replace(
+      '<source url="https://www.yna.co.kr">연합뉴스</source>',
+      '<source url="https://www.mk.co.kr">mk.co.kr</source>',
+    );
+    expect(parseGoogleRss(xml)[0].press).toBe('매일경제');
+  });
+
+  it('source가 이미 언론사명이면 그대로 쓴다', () => {
+    expect(parseGoogleRss(fixture)[0].press).toBe('연합뉴스');
+  });
+});

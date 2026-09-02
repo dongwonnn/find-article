@@ -20,6 +20,15 @@ const PRESS_BY_DOMAIN: Record<string, string> = {
   'interfootball.co.kr': '인터풋볼', 'fourfourtwo.co.kr': '포포투',
   'zdnet.co.kr': '지디넷코리아', 'etnews.com': '전자신문', 'bloter.net': '블로터',
   'wikitree.co.kr': '위키트리', 'insight.co.kr': '인사이트',
+  'koreadaily.com': '미주중앙일보', 'koreatimes.com': '미주한국일보',
+  'v.daum.net': '다음 뉴스', 'n.news.naver.com': '네이버 뉴스',
+  'topstarnews.net': '톱스타뉴스', 'newsen.com': '뉴스엔',
+  'tvreport.co.kr': 'TV리포트', 'sportsworldi.com': '스포츠월드',
+  'sportsq.co.kr': '스포츠Q', 'thespike.co.kr': '더스파이크',
+  'jumpball.co.kr': '점프볼', 'basketkorea.com': '바스켓코리아',
+  'inews24.com': '아이뉴스24', 'newspim.com': '뉴스핌',
+  'ajunews.com': '아주경제', 'mediapen.com': '미디어펜',
+  'sisaon.co.kr': '시사오늘', 'nate.com': '네이트',
 };
 
 export function pressFromUrl(url: string): string {
