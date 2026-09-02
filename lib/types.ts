@@ -14,4 +14,6 @@ export interface NewsArticle {
 export interface SearchResponse {
   articles: NewsArticle[];
   failedPortals: Portal[];
+  /** 실패한 포털의 원인 문구. 엣지 배포에서는 서버 로그를 보기 어려워 응답에 함께 싣는다. */
+  failureReasons?: Partial<Record<Portal, string>>;
 }
