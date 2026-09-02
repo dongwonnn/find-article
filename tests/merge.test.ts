@@ -131,3 +131,37 @@ describe('articleId', () => {
     expect(articleId('https://very-long-domain-name.example.com/some/long/path/1')).toMatch(/^[0-9a-f]{1,8}$/);
   });
 });
+
+describe('잘린 제목 합치기', () => {
+  it('네이버가 자른 제목과 다음의 전체 제목을 같은 기사로 본다', () => {
+    const merged = mergeArticles([
+      [
+        article({
+          url: 'https://osen.co.kr/article/G111',
+          title: '‘월드컵 삼총사’ 이기혁-양현준-엄지성, 와일드카드 믿는다…이민성...',
+          portals: ['naver'],
+        }),
+      ],
+      [
+        article({
+          url: 'https://v.daum.net/v/2026',
+          title: '‘월드컵 삼총사’ 이기혁-양현준-엄지성, 와일드카드 믿는다…이민성 감독 "리더 역할"',
+          portals: ['daum'],
+        }),
+      ],
+    ]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].portals).toEqual(['naver', 'daum']);
+    // 화면에는 반쪽이 아니라 온전한 제목이 남아야 한다.
+    expect(merged[0].title).not.toMatch(/\.\.\.$/);
+    expect(merged[0].title).toContain('리더 역할');
+  });
+
+  it('앞부분이 짧게 겹치는 다른 기사는 합치지 않는다', () => {
+    const merged = mergeArticles([
+      [article({ url: 'https://a.com/1', title: '손흥민 골...', portals: ['naver'] })],
+      [article({ url: 'https://b.com/2', title: '손흥민 골든부트 수상 소식과 인터뷰 전문', portals: ['daum'] })],
+    ]);
+    expect(merged).toHaveLength(2);
+  });
+});
