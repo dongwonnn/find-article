@@ -5,6 +5,8 @@ import { parseNaverHtml } from '@/lib/collectors/naver';
 
 // 네이버 뉴스탭 내부 엔드포인트(s.search.naver.com/p/newssearch/3/api/tab/more)의
 // 실제 응답을 손대지 않고 그대로 저장한 것이다. 기사 마크업은 collection[0].html에 있다.
+// 2026-09-03 '삼성전자' 최신순 2페이지(start=11) 캡처 — 10건 중 6건이 신문 지면에도
+// 실린 기사라 지면 위치('A4면 1단')와 시각이 같은 칸에 섞여 오는 경우를 함께 덮는다.
 const response = JSON.parse(readFileSync('tests/fixtures/naver-search.json', 'utf8'));
 const fixture: string = response.collection[0].html;
 const NOW = new Date('2026-09-02T12:00:00.000Z');
@@ -79,5 +81,32 @@ describe('parseNaverHtml', () => {
   it('언론사 셀렉터가 살아있다 (폴백값이 쓰인 기사가 없다)', () => {
     const fallback = parseNaverHtml(fixture, NOW).filter((a) => a.press === '네이버 뉴스');
     expect(fallback).toHaveLength(0);
+  });
+});
+
+// 신문 지면에도 실린 기사는 시각 칸 첫 자리가 지면 위치('A4면 1단')로 채워지고
+// 실제 시각은 그 옆 칸에 있다. 첫 칸만 읽으면 지면 기사가 전부 epoch(1970)로
+// 떨어져, 네이버가 최신으로 올린 기사가 목록 맨 뒤로 가라앉는다.
+describe('parseNaverHtml — 지면(신문) 기사 시각', () => {
+  const PAGE_POSITION = /[A-Z]?\d+면\s*\d+단/;
+
+  // 이 테스트가 지면 케이스를 실제로 검증하고 있다는 근거. fixture를 바꿨는데
+  // 지면 기사가 하나도 없으면 아래 두 테스트는 아무것도 지켜 주지 못한다.
+  it('fixture에 지면 기사가 들어 있다', () => {
+    expect(fixture).toMatch(PAGE_POSITION);
+  });
+
+  it('지면 위치를 시각으로 오인하지 않고 옆 칸의 실제 시각을 읽는다', () => {
+    const articles = parseNaverHtml(fixture, NOW);
+    // fixture 첫 기사의 시각 칸은 ['A4면 1단', '12분 전', '네이버뉴스']다.
+    expect(articles[0].press).toBe('세계일보');
+    expect(articles[0].publishedAt).toBe('2026-09-02T11:48:00.000Z'); // NOW - 12분
+  });
+
+  it('지면 기사가 최신순 맨 뒤로 가라앉지 않는다', () => {
+    const times = parseNaverHtml(fixture, NOW).map((a) => Date.parse(a.publishedAt));
+    // 네이버가 최신순으로 내려준 순서다. 지면 기사 하나라도 epoch로 떨어지면
+    // 이 단조 감소가 깨진다.
+    expect(times).toEqual([...times].sort((a, b) => b - a));
   });
 });
