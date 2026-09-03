@@ -36,8 +36,8 @@ const PRESS_FALLBACK = '네이버 뉴스';
 // text()로 읽으면 언론사명 뒤에 그대로 따라붙는다.
 const SCREEN_READER_SUFFIX = /새\s*창\s*열림$/;
 
-// cheerio가 노드 타입(domhandler의 Element)을 재노출하지 않아 메서드에서 끌어온다.
-type Selection = ReturnType<cheerio.Cheerio<never>['parent']>;
+// cheerio가 노드 타입을 재노출하지 않아, 선택 함수의 반환 타입에서 끌어온다.
+type Selection = ReturnType<cheerio.CheerioAPI>;
 
 function collapse(text: string): string {
   return text.replace(/\s+/g, ' ').trim();
@@ -50,24 +50,7 @@ function absoluteImageUrl(src: string | undefined): string | undefined {
   return undefined;
 }
 
-/**
- * 기사 한 건을 감싸는 컨테이너의 클래스는 빌드 해시(NFVvjX8P3nMtRfPx)라 직접 집을 수
- * 없다. 그래서 제목 링크에서 위로 올라가며 언론사 블록까지 함께 담은 첫 조상을 기사
- * 단위로 삼는다. 제목 링크가 둘 이상 들어오는 높이는 이미 여러 기사를 삼킨 것이므로
- * 거기서 멈춘다 — 그러면 언론사·시각이 폴백값으로 떨어져 회귀 테스트가 잡아낸다.
- */
-function articleScope(titleLink: Selection): Selection {
-  let node = titleLink.parent();
-  for (let depth = 0; depth < 8 && node.length > 0; depth++) {
-    if (node.find(TITLE_LINK).length > 1) break;
-    if (node.find(PRESS_TEXT).length > 0) return node;
-    node = node.parent();
-  }
-  return titleLink.parent();
-}
-
-function pressName(item: Selection): string {
-  const holder = item.find(PRESS_TEXT).first();
+function pressName(holder: Selection): string {
   // <span class="…title-text"><a><span>OSEN</span><span>새 창 열림</span></a></span>
   // 구조라 첫 span만 읽는다. 링크가 없는 언론사를 위해 접미사도 한 번 더 떼어낸다.
   const inner = holder.find('span').first();
@@ -90,46 +73,82 @@ function pressName(item: Selection): string {
  * 최신순 맨 앞을 차지하고, 무엇보다 '셀렉터가 깨졌다'는 신호가 사라진다 —
  * 회귀 테스트가 바로 그 epoch를 보고 마크업 변경을 잡아낸다.
  */
-function publishedAt(item: Selection, now: Date): string {
-  const subtexts = item.find(SUBTEXT);
-  for (let i = 0; i < subtexts.length; i++) {
-    const iso = parseKoreanTime(collapse(subtexts.eq(i).text()), now);
+function publishedAt(subtexts: string[], now: Date): string {
+  for (const text of subtexts) {
+    const iso = parseKoreanTime(text, now);
     if (iso !== EPOCH_ISO) return iso;
   }
   return EPOCH_ISO;
 }
 
+/**
+ * 기사 경계를 어떻게 잡는가 — 여기가 이 파서에서 가장 깨지기 쉬운 부분이다.
+ *
+ * 기사를 감싸는 컨테이너의 클래스는 빌드 해시(NFVvjX8P3nMtRfPx)라 집을 수 없다.
+ * 예전에는 제목 링크에서 조상을 거슬러 올라가 언론사 블록을 품은 첫 조상을 기사
+ * 단위로 삼았는데, 정확도순(sort=0)에서 깨졌다. 이 정렬에서는 언론사·시각 블록이
+ * 제목의 조상이 아니라 **앞쪽 형제**로 놓이고, 두 기사가 한 컨테이너에 묶여 나와서
+ * 위로 올라가다 보면 제목이 2개인 높이에 먼저 닿는다. 그러면 언론사는 폴백값
+ * ('네이버 뉴스'), 시각은 epoch(1970년)로 떨어졌다. 실측으로 제목 28개 중 8개가
+ * 이렇게 새어나갔다.
+ *
+ * 그래서 조상 관계를 믿지 않고 **문서 순서**로 자른다. 언론사 블록이 기사 하나의
+ * 시작점이고, 다음 언론사 블록 전까지가 그 기사의 영역이다. 이 규칙은 두 정렬 모두에서
+ * 정확히 10건씩, 누락 0으로 맞는 것을 확인했다.
+ */
+const ARTICLE_PARTS = [PRESS_TEXT, SUBTEXT, TITLE_LINK, SUMMARY_LINK, THUMB_LINK].join(', ');
+
+interface Segment {
+  press: Selection;
+  subtexts: string[];
+  title?: Selection;
+  summary?: Selection;
+  thumb?: Selection;
+}
+
 export function parseNaverHtml(html: string, now: Date = new Date()): NewsArticle[] {
   const $ = cheerio.load(html);
-  const articles: NewsArticle[] = [];
+  const segments: Segment[] = [];
 
-  $(TITLE_LINK).each((_, el) => {
-    const titleLink = $(el);
+  // cheerio는 선택 결과를 문서 순서로 돌려준다. 그 순서대로 훑으며
+  // 언론사 블록을 만날 때마다 새 기사를 연다.
+  $(ARTICLE_PARTS).each((_, el) => {
+    const node = $(el);
+    if (node.is(PRESS_TEXT)) {
+      segments.push({ press: node, subtexts: [] });
+      return;
+    }
+    const current = segments[segments.length - 1];
+    if (!current) return; // 첫 언론사 블록보다 앞에 있는 노드는 기사에 속하지 않는다.
+    if (node.is(SUBTEXT)) current.subtexts.push(collapse(node.text()));
+    else if (node.is(TITLE_LINK)) current.title ??= node;
+    else if (node.is(SUMMARY_LINK)) current.summary ??= node;
+    else if (node.is(THUMB_LINK)) current.thumb ??= node;
+  });
+
+  const articles: NewsArticle[] = [];
+  for (const segment of segments) {
+    if (!segment.title) continue;
     // 제목 링크의 href는 네이버 뉴스(n.news.naver.com)가 아니라 언론사 원문 주소다.
     // 다음·구글도 원문 도메인을 주기 때문에 이 덕분에 mergeArticles가 포털 간
     // 중복 기사를 한 장의 카드로 합칠 수 있다.
-    const url = titleLink.attr('href') ?? '';
-    const title = collapse(titleLink.find(TITLE_TEXT).first().text());
-    if (!title || !url.startsWith('http')) return;
+    const url = segment.title.attr('href') ?? '';
+    const title = collapse(segment.title.find(TITLE_TEXT).first().text());
+    if (!title || !url.startsWith('http')) continue;
 
-    const item = articleScope(titleLink);
-    const summary =
-      collapse(item.find(SUMMARY_LINK).find(SUMMARY_TEXT).first().text()) || undefined;
-    // 썸네일은 .img 링크 안에만 있다. 범위를 좁히지 않으면 언론사 로고를 집는다.
-    const imageUrl = absoluteImageUrl(item.find(THUMB_LINK).find('img').first().attr('src'));
-    const press = pressName(item);
-
+    const press = pressName(segment.press);
     articles.push({
       id: articleId(url),
       title,
-      summary,
+      summary: collapse(segment.summary?.find(SUMMARY_TEXT).first().text() ?? '') || undefined,
       url,
       press: press || PRESS_FALLBACK,
       portals: ['naver'],
-      publishedAt: publishedAt(item, now),
-      imageUrl,
+      publishedAt: publishedAt(segment.subtexts, now),
+      // 썸네일은 .img 링크 안에만 있다. 범위를 좁히지 않으면 언론사 로고를 집는다.
+      imageUrl: absoluteImageUrl(segment.thumb?.find('img').first().attr('src')),
     });
-  });
+  }
 
   return articles;
 }

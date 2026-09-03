@@ -110,3 +110,40 @@ describe('parseNaverHtml — 지면(신문) 기사 시각', () => {
     expect(times).toEqual([...times].sort((a, b) => b - a));
   });
 });
+
+// 정확도순(sort=0)에서는 언론사·시각 블록이 제목의 조상이 아니라 앞쪽 형제로 놓이고
+// 두 기사가 한 컨테이너에 묶여 나온다. 조상을 거슬러 올라가는 방식으로는 이 기사들의
+// 언론사·시각을 놓쳐 폴백값('네이버 뉴스', epoch)으로 떨어졌다.
+// 2026-09-03 '코리아하우스' 정확도순 1페이지 캡처 — 제목 링크 28개 중 8개가 이 형태였다.
+const clusterResponse = JSON.parse(
+  readFileSync('tests/fixtures/naver-search-cluster.json', 'utf8'),
+);
+const clusterFixture: string = clusterResponse.collection[0].html;
+
+describe('parseNaverHtml — 정확도순 클러스터 레이아웃', () => {
+  it('한 페이지에서 기사 10건을 빠짐없이 뽑는다', () => {
+    expect(parseNaverHtml(clusterFixture, NOW)).toHaveLength(10);
+  });
+
+  it('언론사가 폴백값으로 떨어진 기사가 없다', () => {
+    const fallback = parseNaverHtml(clusterFixture, NOW).filter((a) => a.press === '네이버 뉴스');
+    expect(fallback).toHaveLength(0);
+  });
+
+  it('시각이 epoch로 떨어진 기사가 없다', () => {
+    const unparsed = parseNaverHtml(clusterFixture, NOW).filter(
+      (a) => a.publishedAt === EPOCH_ISO,
+    );
+    expect(unparsed).toHaveLength(0);
+  });
+
+  it('묶여 나온 기사도 자기 언론사를 제대로 가져간다', () => {
+    // 사용자가 1970년으로 신고했던 바로 그 기사다.
+    const article = parseNaverHtml(clusterFixture, NOW).find((a) =>
+      a.title.includes('만트럭버스코리아'),
+    );
+    expect(article).toBeDefined();
+    expect(article?.press).toBe('오토타임즈');
+    expect(article?.publishedAt).not.toBe(EPOCH_ISO);
+  });
+});
