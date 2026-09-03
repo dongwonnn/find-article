@@ -10,10 +10,12 @@ import { COLLECT_TIMEOUT_MS } from './config';
 // (공식 검색 API는 2026-07-31자로 NAVER API HUB 유료 계정으로 이관됐다.)
 const ENDPOINT = 'https://s.search.naver.com/p/newssearch/3/api/tab/more';
 
-// sort=1이 최신순, start는 1부터 10건씩. nso/ssc/sm/field/pd는 검색 페이지가
-// 그대로 붙여 보내는 값이라 함께 보낸다.
+// sort=0은 정확도순(네이버 뉴스 검색의 기본값), start는 1부터 10건씩.
+// 최신순(sort=1)은 '코리아하우스'처럼 여러 단어로 쪼개지는 검색어에서
+// 관련 없는 최근 기사가 그대로 올라와 쓸모가 없었다.
+// nso/ssc/sm/field/pd는 검색 페이지가 그대로 붙여 보내는 값이라 함께 보낸다.
 function pageUrl(encodedQuery: string, start: number): string {
-  return `${ENDPOINT}?query=${encodedQuery}&sort=1&start=${start}&ssc=tab.news.all&nso=so%3Add%2Cp%3Aall%2Ca%3Aall&sm=tab_smr&field=0&pd=-1`;
+  return `${ENDPOINT}?query=${encodedQuery}&sort=0&start=${start}&ssc=tab.news.all&nso=so%3Ar%2Cp%3Aall%2Ca%3Aall&sm=tab_smr&field=0&pd=-1`;
 }
 
 // 클래스 상당수가 빌드 해시(fender-ui_228e3bd1, ZdTBe0dB_G0DGXFC)라 셀렉터로 쓸 수 없다.
@@ -149,7 +151,7 @@ async function fetchPage(encodedQuery: string, start: number): Promise<NewsArtic
       'Accept-Language': 'ko-KR,ko;q=0.9',
       // 지금은 없어도 응답이 같지만, 검색 페이지가 부르는 내부 엔드포인트인 만큼
       // 네이버가 언제든 출처를 따질 수 있어 실제 호출과 똑같이 맞춰 둔다.
-      Referer: `https://search.naver.com/search.naver?where=news&query=${encodedQuery}&sort=1`,
+      Referer: `https://search.naver.com/search.naver?where=news&query=${encodedQuery}&sort=0`,
     },
     signal: AbortSignal.timeout(COLLECT_TIMEOUT_MS),
     cache: 'no-store',

@@ -49,6 +49,8 @@ interface Entry {
   article: NewsArticle;
   titleKey: string;
   truncated: boolean;
+  /** 포털이 매긴 순위(목록 내 인덱스). 여러 포털에 걸린 기사는 가장 앞선 순위를 쓴다. */
+  rank: number;
 }
 
 // 잘린 제목 ↔ 전체 제목을 앞부분 일치로 이어준다. 어느 쪽이 잘렸든 잡히도록
@@ -71,7 +73,7 @@ export function mergeArticles(lists: NewsArticle[][]): NewsArticle[] {
   const result: NewsArticle[] = [];
 
   for (const list of lists) {
-    for (const incoming of list) {
+    list.forEach((incoming, rank) => {
       const urlKey = normalizeUrl(incoming.url);
       const titleKey = normalizeTitle(incoming.title);
       const truncated = TRUNCATED.test(incoming.title);
@@ -105,17 +107,26 @@ export function mergeArticles(lists: NewsArticle[][]): NewsArticle[] {
         // existing entry's title) still resolves to the same merged entry.
         if (urlKey) byUrl.set(urlKey, existing);
         if (titleKey) byTitle.set(titleKey, existing);
+        // 여러 포털이 함께 집은 기사는 그만큼 관련도가 높다고 보고
+        // 가장 앞선 순위를 취한다.
+        if (rank < matched.rank) matched.rank = rank;
       } else {
         const copy: NewsArticle = { ...incoming, portals: [...incoming.portals] };
-        const entry: Entry = { article: copy, titleKey, truncated };
+        const entry: Entry = { article: copy, titleKey, truncated, rank };
         if (urlKey) byUrl.set(urlKey, copy);
         if (titleKey) byTitle.set(titleKey, copy);
         entries.push(entry);
         entryOf.set(copy, entry);
         result.push(copy);
       }
-    }
+    });
   }
 
-  return result.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+  // 포털이 매긴 관련도 순서를 유지한다. 날짜순으로 다시 정렬하면 관련 없는
+  // 최근 기사가 위로 올라와, 관련도순으로 수집한 의미가 사라진다.
+  // 순위가 같으면 최신 기사를 앞에 둔다.
+  const rankOf = (article: NewsArticle) => entryOf.get(article)?.rank ?? Number.MAX_SAFE_INTEGER;
+  return result.sort(
+    (a, b) => rankOf(a) - rankOf(b) || b.publishedAt.localeCompare(a.publishedAt),
+  );
 }

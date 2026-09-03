@@ -63,7 +63,7 @@ export default function HomePage() {
           <div className="px-6 py-20 text-center">
             <p className="text-base font-semibold text-gray-800">무엇을 찾아볼까요?</p>
             <p className="mt-2 text-sm leading-relaxed text-gray-500">
-              검색어를 입력하면 네이버·다음·구글 뉴스를 최신순으로 모아 보여드려요.
+              검색어를 입력하면 네이버·다음·구글 뉴스를 관련도순으로 모아 보여드려요.
             </p>
           </div>
         )}
@@ -96,7 +96,7 @@ export default function HomePage() {
                   ) : (
                     <span className="font-semibold text-gray-700">{articles.length}건</span>
                   )}{' '}
-                  · 최신순
+                  · 관련도순
                 </p>
               </>
             )}

@@ -79,7 +79,7 @@ export function toDateRange(
   return { from: todayStart - (days - 1) * DAY_MS, to: todayStart + DAY_MS };
 }
 
-/** 기간에 드는 기사만 남긴다. 원본 순서(최신순)는 그대로 둔다. */
+/** 기간에 드는 기사만 남긴다. 원본 순서(관련도순)는 그대로 둔다. */
 export function filterArticlesByDate(
   articles: NewsArticle[],
   value: DateFilterValue,

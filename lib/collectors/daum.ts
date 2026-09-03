@@ -63,7 +63,7 @@ export function parseDaumHtml(html: string, now: Date = new Date()): NewsArticle
 
 export async function collectDaum(query: string): Promise<NewsArticle[]> {
   const res = await fetch(
-    `https://search.daum.net/search?w=news&q=${encodeURIComponent(query)}&sort=recency&cluster=n`,
+    `https://search.daum.net/search?w=news&q=${encodeURIComponent(query)}&sort=accuracy&cluster=n`,
     {
       headers: {
         'User-Agent':

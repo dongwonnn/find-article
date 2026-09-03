@@ -65,12 +65,45 @@ describe('mergeArticles', () => {
     expect(merged[0].publishedAt).toBe('2026-09-02T03:00:00.000Z');
   });
 
-  it('최신순으로 정렬한다', () => {
+  it('포털이 매긴 관련도 순서를 유지한다 (날짜가 더 최신이어도 뒤집지 않는다)', () => {
     const merged = mergeArticles([[
-      article({ url: 'https://a.com/old', publishedAt: '2026-09-01T00:00:00.000Z' }),
-      article({ url: 'https://a.com/new', title: '다른 제목', publishedAt: '2026-09-02T00:00:00.000Z' }),
+      article({ url: 'https://a.com/1st', publishedAt: '2026-09-01T00:00:00.000Z' }),
+      article({ url: 'https://a.com/2nd', title: '다른 제목', publishedAt: '2026-09-02T00:00:00.000Z' }),
     ]]);
-    expect(merged[0].url).toBe('https://a.com/new');
+    expect(merged.map((a) => a.url)).toEqual(['https://a.com/1st', 'https://a.com/2nd']);
+  });
+
+  it('순위가 같으면 최신 기사를 앞에 둔다', () => {
+    // 서로 다른 포털의 1순위 기사끼리는 rank가 같다.
+    const merged = mergeArticles([
+      [article({ url: 'https://a.com/old', publishedAt: '2026-09-01T00:00:00.000Z' })],
+      [
+        article({
+          url: 'https://b.com/new',
+          title: '다른 제목',
+          portals: ['daum'],
+          publishedAt: '2026-09-02T00:00:00.000Z',
+        }),
+      ],
+    ]);
+    expect(merged[0].url).toBe('https://b.com/new');
+  });
+
+  it('여러 포털에 걸린 기사는 가장 앞선 순위를 가져간다', () => {
+    // 네이버에서 3위인 기사가 다음에서 1위면, 1위로 취급해 위로 올린다.
+    const shared = { title: '공통 기사', url: 'https://a.com/shared' };
+    const merged = mergeArticles([
+      [
+        article({ url: 'https://a.com/1', title: '가' }),
+        article({ url: 'https://a.com/2', title: '나' }),
+        article({ ...shared }),
+      ],
+      [article({ ...shared, portals: ['daum'] })],
+    ]);
+    const order = merged.map((a) => a.url);
+    // 네이버에서 3순위였지만 다음 1순위를 물려받아, 네이버 2순위 기사보다 앞에 온다.
+    expect(order.indexOf('https://a.com/shared')).toBeLessThan(order.indexOf('https://a.com/2'));
+    expect(merged.find((a) => a.url === 'https://a.com/shared')?.portals).toEqual(['naver', 'daum']);
   });
 
   it('입력 배열을 변형하지 않는다', () => {
