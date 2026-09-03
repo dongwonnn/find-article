@@ -8,9 +8,12 @@ const PORTAL_LABEL: Record<Portal, string> = { naver: '네이버', daum: '다음
 export function ArticleList({
   articles,
   failedPortals,
+  /** 0건인 이유. 검색 자체가 빈손인지, 날짜 필터가 다 걸러 낸 것인지에 따라 안내가 달라진다. */
+  emptyReason = 'search',
 }: {
   articles: NewsArticle[];
   failedPortals: Portal[];
+  emptyReason?: 'search' | 'dateFilter';
 }) {
   return (
     <div>
@@ -34,8 +37,17 @@ export function ArticleList({
           role="status"
           className="rounded-xl border border-dashed border-gray-300 px-6 py-14 text-center"
         >
-          <p className="text-sm font-medium text-gray-700">검색 결과가 없어요.</p>
-          <p className="mt-1 text-sm text-gray-500">다른 검색어로 다시 찾아보세요.</p>
+          {emptyReason === 'dateFilter' ? (
+            <>
+              <p className="text-sm font-medium text-gray-700">선택한 기간에는 기사가 없어요.</p>
+              <p className="mt-1 text-sm text-gray-500">기간을 넓혀서 다시 확인해 보세요.</p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-medium text-gray-700">검색 결과가 없어요.</p>
+              <p className="mt-1 text-sm text-gray-500">다른 검색어로 다시 찾아보세요.</p>
+            </>
+          )}
         </div>
       ) : (
         <ul className="space-y-3">

@@ -1,8 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ArticleList } from '@/components/ArticleList';
+import { DateFilterBar } from '@/components/DateFilterBar';
+import { ExcelDownloadButton } from '@/components/ExcelDownloadButton';
 import { SearchBar } from '@/components/SearchBar';
+import { ALL_DATES, filterArticlesByDate, type DateFilterValue } from '@/lib/date-filter';
 import type { NewsArticle, Portal, SearchResponse } from '@/lib/types';
 
 type Status = 'idle' | 'loading' | 'done' | 'error';
@@ -12,10 +15,18 @@ export default function HomePage() {
   const [query, setQuery] = useState('');
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [failedPortals, setFailedPortals] = useState<Portal[]>([]);
+  const [dateFilter, setDateFilter] = useState<DateFilterValue>(ALL_DATES);
+
+  // 필터는 이미 받아 온 목록에만 건다. 포털을 다시 부르지 않는다.
+  const visible = useMemo(() => filterArticlesByDate(articles, dateFilter), [articles, dateFilter]);
+  const filtered = visible.length !== articles.length;
 
   async function handleSearch(nextQuery: string) {
     setStatus('loading');
     setQuery(nextQuery);
+    // 새 검색은 새 의도다. 앞선 기간 필터를 물고 가면 결과가 0건으로 나와도
+    // 검색이 실패한 것처럼 보인다. 항상 '전체'로 되돌린다.
+    setDateFilter(ALL_DATES);
     try {
       const res = await fetch(`/api/search?q=${encodeURIComponent(nextQuery)}`);
       if (res.status === 401) {
@@ -69,12 +80,31 @@ export default function HomePage() {
         {status === 'done' && (
           <>
             {articles.length > 0 && (
-              <p role="status" className="mb-3 text-xs text-gray-500">
-                ‘{query}’ 뉴스{' '}
-                <span className="font-semibold text-gray-700">{articles.length}건</span> · 최신순
-              </p>
+              <>
+                <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+                  <DateFilterBar value={dateFilter} onChange={setDateFilter} />
+                  <ExcelDownloadButton articles={visible} query={query} />
+                </div>
+                {/* role="status"라서 필터로 건수가 바뀌면 스크린리더가 바로 읽어 준다 */}
+                <p role="status" className="mb-3 text-xs text-gray-500">
+                  ‘{query}’ 뉴스{' '}
+                  {filtered ? (
+                    <>
+                      전체 {articles.length}건 중{' '}
+                      <span className="font-semibold text-gray-700">{visible.length}건</span>
+                    </>
+                  ) : (
+                    <span className="font-semibold text-gray-700">{articles.length}건</span>
+                  )}{' '}
+                  · 최신순
+                </p>
+              </>
             )}
-            <ArticleList articles={articles} failedPortals={failedPortals} />
+            <ArticleList
+              articles={visible}
+              failedPortals={failedPortals}
+              emptyReason={articles.length > 0 ? 'dateFilter' : 'search'}
+            />
           </>
         )}
       </main>
