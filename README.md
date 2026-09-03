@@ -6,9 +6,9 @@
 
 ## 구조
 
-- `lib/collectors/` — 포털별 수집기(`naver.ts`, `daum.ts`, `google.ts`)와
-  이를 병렬로 호출하는 오케스트레이터(`index.ts`의 `collectAll`).
-  한 포털이 실패해도 나머지 결과는 그대로 반환한다(`Promise.allSettled`).
+- `lib/collectors/` — 네이버 수집기(`naver.ts`)와 이를 호출하는 오케스트레이터
+  (`index.ts`의 `collectAll`). 포털을 여러 개 붙일 수 있는 구조는 남아 있어
+  (`Portal` 타입, `failedPortals`), 다음·구글을 되살리려면 수집기만 다시 끼우면 된다.
 - `lib/merge.ts` — 여러 포털 결과를 URL·제목 기준으로 중복 제거하고
   최신순으로 정렬한다(`mergeArticles`).
 - `lib/cache.ts` — 메모리 TTL 캐시(`TtlCache`). 검색 결과와 대표 이미지 캐시에 쓰인다.

@@ -1,14 +1,14 @@
 import type { NewsArticle, Portal } from '../types';
-import { collectDaum } from './daum';
-import { collectGoogle } from './google';
 import { collectNaver } from './naver';
 
 export type Collector = (query: string) => Promise<NewsArticle[]>;
+export type Collectors = Partial<Record<Portal, Collector>>;
 
-const DEFAULT_COLLECTORS: Record<Portal, Collector> = {
+// 다음·구글은 뺐다. 다음은 잘 됐지만 네이버만으로 충분하다는 판단이고,
+// 구글은 Cloudflare IP에서 503으로 막혀 매 검색마다 실패 배너만 띄웠다.
+// Portal 타입에는 셋 다 남겨 둬서 되살릴 때 수집기만 다시 끼우면 된다.
+const DEFAULT_COLLECTORS: Collectors = {
   naver: collectNaver,
-  daum: collectDaum,
-  google: collectGoogle,
 };
 
 function reasonOf(error: unknown): string {
@@ -21,14 +21,14 @@ function reasonOf(error: unknown): string {
 
 export async function collectAll(
   query: string,
-  collectors: Record<Portal, Collector> = DEFAULT_COLLECTORS,
+  collectors: Collectors = DEFAULT_COLLECTORS,
 ): Promise<{
   lists: NewsArticle[][];
   failedPortals: Portal[];
   failureReasons: Partial<Record<Portal, string>>;
 }> {
   const portals = Object.keys(collectors) as Portal[];
-  const settled = await Promise.allSettled(portals.map((p) => collectors[p](query)));
+  const settled = await Promise.allSettled(portals.map((p) => collectors[p]!(query)));
 
   const lists: NewsArticle[][] = [];
   const failedPortals: Portal[] = [];

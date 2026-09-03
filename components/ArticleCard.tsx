@@ -83,16 +83,25 @@ export function ArticleCard({ article }: { article: NewsArticle }) {
               ·
             </span>
             <span className="tabular-nums">{relativeTime(article.publishedAt)}</span>
-            <span className="sr-only">출처</span>
-            {article.portals.map((portal) => (
-              <span
-                key={portal}
-                className="inline-flex items-center gap-1 rounded-full border border-gray-200 px-2 py-0.5 text-[11px] font-medium text-gray-600"
-              >
-                <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${PORTAL_DOT[portal]}`} />
-                {PORTAL_LABEL[portal]}
-              </span>
-            ))}
+            {/* 포털이 하나뿐일 때는 모든 카드에 같은 배지가 붙어 아무 정보도 주지
+                못한다. 여러 포털에서 함께 잡힌 기사일 때만 어디서 왔는지 보여준다. */}
+            {article.portals.length > 1 && (
+              <>
+                <span className="sr-only">출처</span>
+                {article.portals.map((portal) => (
+                  <span
+                    key={portal}
+                    className="inline-flex items-center gap-1 rounded-full border border-gray-200 px-2 py-0.5 text-[11px] font-medium text-gray-600"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={`h-1.5 w-1.5 rounded-full ${PORTAL_DOT[portal]}`}
+                    />
+                    {PORTAL_LABEL[portal]}
+                  </span>
+                ))}
+              </>
+            )}
           </div>
         </div>
       </a>

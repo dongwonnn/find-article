@@ -185,15 +185,20 @@ async function fetchPage(encodedQuery: string, start: number): Promise<NewsArtic
   return articles;
 }
 
+// 한 번에 10건씩 내려온다. 네이버는 start=301까지도 응답하지만 끝없이 긁을 이유는
+// 없어 10페이지(약 100건)에서 끊는다. 14페이지 동시 요청도 막히지 않는 것을 확인했다.
+const MAX_PAGES = 10;
+const PAGE_SIZE = 10;
+
 export async function collectNaver(query: string): Promise<NewsArticle[]> {
   const encodedQuery = encodeURIComponent(query);
-  // 한 번에 10건씩만 내려와서 1·11 두 페이지를 동시에 부른다.
-  const [first, second] = await Promise.allSettled([
-    fetchPage(encodedQuery, 1),
-    fetchPage(encodedQuery, 11),
-  ]);
+  const starts = Array.from({ length: MAX_PAGES }, (_, i) => i * PAGE_SIZE + 1);
+  const settled = await Promise.allSettled(starts.map((start) => fetchPage(encodedQuery, start)));
+
+  // 첫 페이지가 실패하면 네이버 자체가 막힌 것으로 보고 실패로 올린다.
+  // 뒤쪽 페이지 하나가 빠지는 건 결과가 조금 줄 뿐이라 그대로 진행한다.
+  const [first] = settled;
   if (first.status === 'rejected') throw first.reason;
-  // 2페이지가 실패해도 1페이지 10건은 그대로 돌려준다.
-  const rest = second.status === 'fulfilled' ? second.value : [];
-  return [...first.value, ...rest].slice(0, 20);
+
+  return settled.flatMap((page) => (page.status === 'fulfilled' ? page.value : []));
 }
