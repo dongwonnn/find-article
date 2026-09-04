@@ -1,5 +1,6 @@
 'use client';
 
+import { isSelected, type ExcludedIds } from '@/lib/selection';
 import type { NewsArticle, Portal } from '@/lib/types';
 import { ArticleCard } from './ArticleCard';
 
@@ -10,10 +11,15 @@ export function ArticleList({
   failedPortals,
   /** 0건인 이유. 검색 자체가 빈손인지, 날짜 필터가 다 걸러 낸 것인지에 따라 안내가 달라진다. */
   emptyReason = 'search',
+  /** 엑셀에서 뺄 기사 id. 비어 있으면 전부 담긴다. */
+  excludedIds,
+  onSelectedChange,
 }: {
   articles: NewsArticle[];
   failedPortals: Portal[];
   emptyReason?: 'search' | 'dateFilter';
+  excludedIds: ExcludedIds;
+  onSelectedChange: (id: string, selected: boolean) => void;
 }) {
   return (
     <div>
@@ -52,7 +58,12 @@ export function ArticleList({
       ) : (
         <ul className="space-y-3">
           {articles.map((article) => (
-            <ArticleCard key={article.id} article={article} />
+            <ArticleCard
+              key={article.id}
+              article={article}
+              selected={isSelected(excludedIds, article.id)}
+              onSelectedChange={(selected) => onSelectedChange(article.id, selected)}
+            />
           ))}
         </ul>
       )}

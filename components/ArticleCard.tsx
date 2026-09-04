@@ -12,7 +12,16 @@ const PORTAL_DOT: Record<Portal, string> = {
   google: 'bg-[#EA4335]',
 };
 
-export function ArticleCard({ article }: { article: NewsArticle }) {
+export function ArticleCard({
+  article,
+  /** 엑셀에 담을지 여부. 체크를 풀면 다운로드에서 빠진다. */
+  selected,
+  onSelectedChange,
+}: {
+  article: NewsArticle;
+  selected: boolean;
+  onSelectedChange: (selected: boolean) => void;
+}) {
   const [imageUrl, setImageUrl] = useState<string | null>(article.imageUrl ?? null);
   const [imageFailed, setImageFailed] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -35,13 +44,29 @@ export function ArticleCard({ article }: { article: NewsArticle }) {
   const showImage = imageUrl && !imageFailed;
 
   return (
-    <li className="overflow-hidden rounded-xl border border-gray-200 bg-white transition hover:border-gray-300 hover:shadow-sm">
+    <li
+      className={`flex items-stretch overflow-hidden rounded-xl border border-gray-200 bg-white transition hover:border-gray-300 hover:shadow-sm ${
+        // 빠질 기사라는 걸 목록을 훑기만 해도 알아채게 흐리게 눌러 둔다.
+        selected ? '' : 'opacity-55'
+      }`}
+    >
+      {/* 체크박스는 <a> 바깥에 둔다. 앵커 안에 넣으면 체크하려던 클릭이 기사 링크로
+          새고, 마크업도 어긋난다. label로 감싸 원문 링크만큼 넉넉한 과녁을 준다. */}
+      <label className="flex shrink-0 cursor-pointer items-center py-3 pl-3 sm:py-4 sm:pl-4">
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={(event) => onSelectedChange(event.target.checked)}
+          className="h-4 w-4 cursor-pointer accent-blue-600 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
+        />
+        <span className="sr-only">엑셀에 포함: {article.title}</span>
+      </label>
       <a
         href={article.url}
         target="_blank"
         rel="noopener noreferrer"
         // ring-inset가 없으면 li의 overflow-hidden에 포커스 링이 잘려 보이지 않는다.
-        className="group flex gap-3 p-3 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset focus-visible:outline-none sm:gap-4 sm:p-4"
+        className="group flex min-w-0 flex-1 gap-3 p-3 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset focus-visible:outline-none sm:gap-4 sm:p-4"
       >
         {/* 이미지 자리는 처음부터 잡아 두고, 늦게 도착한 썸네일은 부드럽게 겹쳐 올린다 */}
         <div className="relative h-[68px] w-[92px] shrink-0 overflow-hidden rounded-lg bg-gray-100 sm:h-[76px] sm:w-28">

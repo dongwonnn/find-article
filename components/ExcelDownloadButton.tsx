@@ -6,7 +6,7 @@ import type { NewsArticle } from '@/lib/types';
 
 type Status = 'idle' | 'working' | 'error';
 
-/** 지금 화면에 보이는(=필터를 통과한) 기사만 엑셀로 내려받는다. */
+/** 지금 화면에 보이면서 체크가 살아 있는 기사만 엑셀로 내려받는다. */
 export function ExcelDownloadButton({
   articles,
   query,
